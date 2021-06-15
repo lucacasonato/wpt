@@ -1,0 +1,50 @@
+<!DOCTYPE HTML>
+<meta charset=utf-8>
+<title>Resource timing entries present for urn:uuid resources</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<body>
+<script>
+promise_test(async t => {
+  const link = document.createElement("link");
+  link.rel = "webbundle";
+  link.href = "../resources/wbn/dynamic1.wbn";
+  link.resources.add('https://web-platform.test:8444/web-bundle/resources/wbn/dynamic/resource1.js',
+    'https://web-platform.test:8444/web-bundle/resources/wbn/dynamic/resource2.js',
+    'https://web-platform.test:8444/web-bundle/resources/wbn/dynamic/resource4.js');
+  const script_id = 'https://web-platform.test:8444/web-bundle/resources/wbn/dynamic/resource1.js';
+  document.body.appendChild(link);
+  var script_entries = 0;
+  const promise = new Promise(resolve => {
+    new PerformanceObserver(t.step_func(entryList => {
+      var entries = entryList.getEntriesByType("resource");
+      for (var i = 0; i < entries.length; ++i) {
+        // Ignore any entries for the test harness files if present.
+        if (/testharness(report)?\.js/.test(entries[i].name)) {
+          continue;
+        }
+
+        if (entries[i].name === script_id) {
+            assert_greater_than(entries[i].requestStart, 0);
+            assert_greater_than(entries[i].responseStart, 0);
+            assert_greater_than(entries[i].encodedBodySize, 0);
+            assert_greater_than(entries[i].decodedBodySize, 0);
+            assert_greater_than(entries[i].transferSize, 0);
+            resolve();
+        }
+      }
+    })).observe({entryTypes: ["resource"]});
+  });
+  const script = document.createElement("script");
+  script.src = script_id;
+  document.body.appendChild(script);
+  return promise;
+}, '"Each urn:uuid resource should have exactly 1 ResourceTiming entry."');
+</script>
+<h1>Resource timing attributes filled in</h1>
+<p>
+This test makes sure that ResourceTiming entries have the 5 attributes in question filled in: requestStart, responseStart, encodedBodySize. decodedBodySize. transferSize.
+</p>
+<div id="log"></div>
+</body>
+

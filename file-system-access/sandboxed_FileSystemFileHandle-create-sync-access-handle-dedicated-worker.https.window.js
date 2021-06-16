@@ -1,0 +1,12 @@
+// META: script=resources/test-helpers.js
+// META: script=resources/sandboxed-fs-test-helpers.js
+// META: script=resources/messaging-blob-helpers.js
+// META: script=resources/messaging-helpers.js
+// META: script=resources/messaging-serialize-helpers.js
+// META: script=script-tests/FileSystemFileHandle-create-sync-access-handle-dedicated-worker.js
+// META: timeout=long
+
+//This variable allows the test to differentiate between local and sandboxed
+//file systems, since createSyncAccessHandle() behavior is different each one.
+const file_system_type = "sandboxed";
+

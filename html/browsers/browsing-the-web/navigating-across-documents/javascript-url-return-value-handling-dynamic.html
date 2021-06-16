@@ -1,5 +1,5 @@
 <!doctype html>
-<meta charset=UTF-8>
+<meta charset=windows-1252> <!-- intentionally not UTF-8 to test that the javascript: frames are forced to UTF-8 -->
 <title>Test javascript URL string return values in direct and indirect (target) frame contexts.</title>
 <script src=/resources/testharness.js></script>
 <script src=/resources/testharnessreport.js></script>
@@ -12,25 +12,31 @@ const testInputs = [
   [0xD83D,0xDE0D],
   [0xDE0D,0x41]
 ];
-testInputs.forEach(input => {
-  const javascriptURL = "javascript:[" + input + "].map(b => String.fromCharCode(b)).join('')",
-        output = input.map(b => String.fromCharCode(b)).join("");
+
+const te = new TextEncoder();
+const td = new TextDecoder();
+function roundtripUTF8(string) {
+  return td.decode(te.encode(string));
+}
+
+for (const input of testInputs) {
+  const javascriptURL = "javascript:[" + input + "].map(b => String.fromCharCode(b)).join('')";
+  const output = roundtripUTF8(input.map(b => String.fromCharCode(b)).join(""));
+
   async_test(t => {
     const frame = document.createElement("iframe");
     t.add_cleanup(() => frame.remove());
     frame.src = javascriptURL;
+
     t.step_timeout(() => {
       assert_equals(frame.contentDocument.body.textContent, output);
-      assert_equals(frame.contentDocument.charset, document.charset);
+      assert_equals(frame.contentDocument.charset, "UTF-8");
       t.done();
     }, 200);
-    document.body.appendChild(frame);
-  });
-});
 
-testInputs.forEach(input => {
-  const javascriptURL = "javascript:[" + input + "].map(b => String.fromCharCode(b)).join('')",
-        output = input.map(b => String.fromCharCode(b)).join("");
+    document.body.appendChild(frame);
+  }, `${input} set in src=""`);
+
   async_test(t => {
     const frame = document.createElement("iframe"),
           href = document.createElement("a");
@@ -40,12 +46,12 @@ testInputs.forEach(input => {
     href.href = javascriptURL;
     t.step_timeout(() => {
       assert_equals(frame.contentDocument.body.textContent, output);
-      assert_equals(frame.contentDocument.charset, document.charset);
+      assert_equals(frame.contentDocument.charset, "UTF-8");
       t.done();
     }, 200)
     document.body.appendChild(frame);
     document.body.appendChild(href);
     href.click();
-  });
-});
+  }, `${input} set in href="" targeting a frame and clicked`);
+}
 </script>
